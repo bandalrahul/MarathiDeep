@@ -1,3 +1,4 @@
+import Foundation
 import Publish
 import Plot
 
@@ -15,7 +16,7 @@ private struct MarathiDeepHTMLFactory: HTMLFactory {
                        context: PublishingContext<MarathiDeep>) throws -> HTML {
         HTML(
             .lang(context.site.language),
-            .head(for: index, on: context.site),
+            siteHead(for: index, on: context.site),
             .body {
                 SiteHeader(context: context, selectedSectionID: nil, isHome: true)
                 Wrapper {
@@ -26,7 +27,7 @@ private struct MarathiDeepHTMLFactory: HTMLFactory {
                     }
                     .class("hero")
 
-                    H2("Latest content")
+                    H2("Latest articles")
                     ItemList(
                         items: context.allItems(
                             sortedBy: \.date,
@@ -34,8 +35,21 @@ private struct MarathiDeepHTMLFactory: HTMLFactory {
                         ),
                         site: context.site
                     )
+
+                    Div {
+                        H2("Explore topics")
+                        Paragraph("AI, Technology, Health, Finance, Fitness आणि Education — स्पष्ट मराठीत.")
+                        List(MarathiDeep.SectionID.allCases.filter { $0 != .about }) { sectionID in
+                            let section = context.sections[sectionID]
+                            let title = SiteHeader.sectionTitles[sectionID] ?? section.title
+                            return Link(title, url: section.path.absoluteString)
+                        }
+                        .class("topic-links")
+                    }
+                    .class("topics-block")
                 }
                 SiteFooter(siteName: context.site.name)
+                CookieNotice()
             }
         )
     }
@@ -44,17 +58,21 @@ private struct MarathiDeepHTMLFactory: HTMLFactory {
                          context: PublishingContext<MarathiDeep>) throws -> HTML {
         HTML(
             .lang(context.site.language),
-            .head(for: section, on: context.site),
+            siteHead(for: section, on: context.site),
             .body {
                 SiteHeader(context: context, selectedSectionID: section.id, isHome: false)
                 Wrapper {
                     H1(section.title)
                     if !section.body.isEmpty {
-                        Div(section.body).class("section-intro")
+                        Div(section.body).class("section-intro content")
+                    }
+                    if needsDisclaimer(section.id) {
+                        DisclaimerBanner(sectionID: section.id)
                     }
                     ItemList(items: section.items, site: context.site)
                 }
                 SiteFooter(siteName: context.site.name)
+                CookieNotice()
             }
         )
     }
@@ -63,14 +81,28 @@ private struct MarathiDeepHTMLFactory: HTMLFactory {
                       context: PublishingContext<MarathiDeep>) throws -> HTML {
         HTML(
             .lang(context.site.language),
-            .head(for: item, on: context.site),
+            siteHead(for: item, on: context.site),
             .body(
                 .class("item-page"),
                 .components {
                     SiteHeader(context: context, selectedSectionID: item.sectionID, isHome: false)
                     Wrapper {
                         Article {
+                            if needsDisclaimer(item.sectionID) {
+                                DisclaimerBanner(sectionID: item.sectionID)
+                            }
                             Div(item.content.body).class("content")
+                            Div {
+                                Paragraph("लेखक / संपादन: मराठीदीप संपादकीय टीम")
+                                    .class("byline")
+                                Paragraph {
+                                    Text("अभिप्राय किंवा दुरुस्ती: ")
+                                    Link(SiteConfig.contactEmail,
+                                         url: "mailto:\(SiteConfig.contactEmail)")
+                                }
+                                .class("byline")
+                            }
+                            .class("article-meta")
                             if !item.tags.isEmpty {
                                 Div {
                                     Span("Tagged with: ").class("tag-label")
@@ -81,6 +113,7 @@ private struct MarathiDeepHTMLFactory: HTMLFactory {
                         }
                     }
                     SiteFooter(siteName: context.site.name)
+                    CookieNotice()
                 }
             )
         )
@@ -90,11 +123,16 @@ private struct MarathiDeepHTMLFactory: HTMLFactory {
                       context: PublishingContext<MarathiDeep>) throws -> HTML {
         HTML(
             .lang(context.site.language),
-            .head(for: page, on: context.site),
+            siteHead(for: page, on: context.site),
             .body {
                 SiteHeader(context: context, selectedSectionID: nil, isHome: false)
-                Wrapper(page.body)
+                Wrapper {
+                    Article {
+                        Div(page.body).class("content legal-page")
+                    }
+                }
                 SiteFooter(siteName: context.site.name)
+                CookieNotice()
             }
         )
     }
@@ -103,7 +141,7 @@ private struct MarathiDeepHTMLFactory: HTMLFactory {
                          context: PublishingContext<MarathiDeep>) throws -> HTML? {
         HTML(
             .lang(context.site.language),
-            .head(for: page, on: context.site),
+            siteHead(for: page, on: context.site),
             .body {
                 SiteHeader(context: context, selectedSectionID: nil, isHome: false)
                 Wrapper {
@@ -119,6 +157,7 @@ private struct MarathiDeepHTMLFactory: HTMLFactory {
                     .class("all-tags")
                 }
                 SiteFooter(siteName: context.site.name)
+                CookieNotice()
             }
         )
     }
@@ -127,7 +166,7 @@ private struct MarathiDeepHTMLFactory: HTMLFactory {
                             context: PublishingContext<MarathiDeep>) throws -> HTML? {
         HTML(
             .lang(context.site.language),
-            .head(for: page, on: context.site),
+            siteHead(for: page, on: context.site),
             .body {
                 SiteHeader(context: context, selectedSectionID: nil, isHome: false)
                 Wrapper {
@@ -151,9 +190,45 @@ private struct MarathiDeepHTMLFactory: HTMLFactory {
                     )
                 }
                 SiteFooter(siteName: context.site.name)
+                CookieNotice()
             }
         )
     }
+}
+
+private func needsDisclaimer(_ sectionID: MarathiDeep.SectionID) -> Bool {
+    sectionID == .health || sectionID == .finance || sectionID == .fitness
+}
+
+private func siteHead<T: Location>(for location: T, on site: MarathiDeep) -> Node<HTML.DocumentContext> {
+    let adsense = SiteConfig.adsenseClientID.trimmingCharacters(in: .whitespacesAndNewlines)
+    let verification = SiteConfig.googleSiteVerification.trimmingCharacters(in: .whitespacesAndNewlines)
+
+    return .head(
+        .encoding(.utf8),
+        .siteName(site.name),
+        .url(site.url(for: location)),
+        .title(location.title.isEmpty ? site.name : "\(location.title) | \(site.name)"),
+        .description(location.description.isEmpty ? site.description : location.description),
+        .twitterCardType(location.imagePath == nil ? .summary : .summaryLargeImage),
+        .stylesheet("/styles.css"),
+        .viewport(.accordingToDevice),
+        .unwrap(site.favicon) { .favicon($0) },
+        .rssFeedLink("/feed.rss", title: "Subscribe to \(site.name)"),
+        .unwrap(location.imagePath ?? site.imagePath) { path in
+            .socialImageLink(site.url(for: path))
+        },
+        .meta(.name("author"), .content("मराठीदीप संपादकीय टीम")),
+        .meta(.name("robots"), .content("index,follow")),
+        .if(!verification.isEmpty, .meta(.name("google-site-verification"), .content(verification))),
+        .if(!adsense.isEmpty,
+            .script(
+                .async(),
+                .src("https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=\(adsense)"),
+                .attribute(named: "crossorigin", value: "anonymous")
+            )
+        )
+    )
 }
 
 private struct Wrapper: ComponentContainer {
@@ -169,7 +244,7 @@ private struct SiteHeader: Component {
     var selectedSectionID: MarathiDeep.SectionID?
     var isHome: Bool
 
-    private static let sectionTitles: [MarathiDeep.SectionID: String] = [
+    static let sectionTitles: [MarathiDeep.SectionID: String] = [
         .ai: "AI",
         .technology: "Technology",
         .health: "Health",
@@ -225,8 +300,15 @@ private struct ItemList: Component {
 
     var body: Component {
         if items.isEmpty {
-            Paragraph("No articles yet. Check back soon.")
-                .class("empty-state")
+            Div {
+                Paragraph("या विभागात लवकरच सविस्तर लेख प्रकाशित होतील. तोपर्यंत Home वरील नवीनतम लेख किंवा इतर विषय पाहा.")
+                Paragraph {
+                    Link("Home वर जा", url: "/")
+                    Text(" · ")
+                    Link("Contact", url: "/contact")
+                }
+            }
+            .class("empty-state")
         } else {
             List(items) { item in
                 Article {
@@ -252,21 +334,90 @@ private struct ItemTagList: Component {
     }
 }
 
+private struct DisclaimerBanner: Component {
+    var sectionID: MarathiDeep.SectionID
+
+    var body: Component {
+        let text: String
+        switch sectionID {
+        case .health, .fitness:
+            text = "सूचना: हे सामान्य माहिती लेख आहेत, वैद्यकीय सल्ला नाही. वैयक्तिक आरोग्य निर्णयापूर्वी पात्र डॉक्टरांचा सल्ला घ्या."
+        case .finance:
+            text = "सूचना: हे शैक्षणिक लेख आहेत, वैयक्तिक आर्थिक/गुंतवणूक सल्ला नाही. निर्णय घेण्यापूर्वी पात्र सल्लागाराचा सल्ला घ्या."
+        default:
+            text = ""
+        }
+
+        return Div {
+            Paragraph(text)
+            Paragraph {
+                Link("Terms & Disclaimer वाचा", url: "/terms")
+            }
+        }
+        .class("disclaimer-banner")
+    }
+}
+
+private struct CookieNotice: Component {
+    var body: Component {
+        Div {
+            Paragraph {
+                Text("ही साईट अनुभव सुधारण्यासाठी आणि (लागू असल्यास) जाहिरातींसाठी कुकीज वापरू शकते. तपशील: ")
+                Link("Privacy Policy", url: "/privacy-policy")
+                Text(". ")
+            }
+            Node<HTML.BodyContext>.element(named: "button", nodes: [
+                .attribute(named: "type", value: "button"),
+                .attribute(
+                    named: "onclick",
+                    value: "document.getElementById('cookie-notice').style.display='none';try{localStorage.setItem('md_cookie_ok','1')}catch(e){}"
+                ),
+                .text("समजले")
+            ])
+            Node<HTML.BodyContext>.script(
+                .raw(
+                    """
+                    try{if(localStorage.getItem('md_cookie_ok')==='1'){var n=document.getElementById('cookie-notice');if(n)n.style.display='none';}}catch(e){}
+                    """
+                )
+            )
+        }
+        .id("cookie-notice")
+        .class("cookie-notice")
+    }
+}
+
 private struct SiteFooter: Component {
     var siteName: String
 
     var body: Component {
         Footer {
             Div {
-                Paragraph("© \(siteName). Knowledge shared in Marathi.")
-                Paragraph {
-                    Text("Built with ")
-                    Link("Publish", url: "https://github.com/johnsundell/publish")
-                    Text(" · ")
-                    Link("RSS", url: "/feed.rss")
+                Div {
+                    Paragraph(siteName).class("footer-brand")
+                    Paragraph("ज्ञान, तंत्रज्ञान आणि जीवनशैली — मराठीतून.")
+                    Paragraph {
+                        Text("संपर्क: ")
+                        Link(SiteConfig.contactEmail, url: "mailto:\(SiteConfig.contactEmail)")
+                    }
                 }
+                .class("footer-about")
+
+                Navigation {
+                    List {
+                        ListItem { Link("About", url: "/about") }
+                        ListItem { Link("Contact", url: "/contact") }
+                        ListItem { Link("Privacy Policy", url: "/privacy-policy") }
+                        ListItem { Link("Terms & Disclaimer", url: "/terms") }
+                        ListItem { Link("RSS", url: "/feed.rss") }
+                    }
+                }
+                .class("footer-nav")
             }
-            .class("wrapper")
+            .class("wrapper footer-inner")
+
+            Paragraph("© \(Calendar.current.component(.year, from: Date())) \(siteName). All rights reserved.")
+                .class("footer-copy wrapper")
         }
     }
 }

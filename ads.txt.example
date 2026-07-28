@@ -1,0 +1,5 @@
+# After AdSense approval, create Resources/ads.txt with your publisher line:
+# google.com, pub-XXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0
+#
+# Then run `publish generate` so it is available at https://your-domain/ads.txt
+google.com, pub-XXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0
