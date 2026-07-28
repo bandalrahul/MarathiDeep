@@ -40,6 +40,15 @@ struct MarathiDeep: Website {
 
 try MarathiDeep().publish(
     withTheme: .marathiDeep,
+    // Publish's RSS generator can segfault on Linux CI (DateFormatter concurrency).
+    // Keep RSS on macOS/local builds; skip it on Linux runners.
+    rssFeedConfig: {
+        #if os(Linux)
+        return nil
+        #else
+        return .default
+        #endif
+    }(),
     additionalSteps: [
         .step(named: "Write ads.txt when AdSense ID is configured") { context in
             let client = SiteConfig.adsenseClientID.trimmingCharacters(in: .whitespacesAndNewlines)

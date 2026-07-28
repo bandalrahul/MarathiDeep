@@ -16,22 +16,19 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    # macOS avoids a Publish RSS DateFormatter crash that happens on Linux.
+    runs-on: macos-14
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Swift
-        uses: swift-actions/setup-swift@v2
-        with:
-          swift-version: "5.10"
-
       - name: Generate site
         run: |
+          swift --version
           swift run -c release
-          # Keep custom domain attached across deploys
           printf '%s\n' 'marathideep.com' > Output/CNAME
-          ls -la Output | head -30
+          test -f Output/index.html
+          ls -la Output | head -40
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
