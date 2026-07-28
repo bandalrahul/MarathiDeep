@@ -23,6 +23,8 @@ struct MarathiDeep: Website {
         case finance
         case fitness
         case education
+        case travel
+        case schemes
         case about
     }
 
@@ -30,7 +32,7 @@ struct MarathiDeep: Website {
 
     var url = URL(string: "https://marathideep.com")!
     var name = "मराठीदीप"
-    var description = "ज्ञान, तंत्रज्ञान आणि जीवनशैली — मराठीतून, सोप्या भाषेत. AI, Technology, Health, Finance, Fitness आणि Education विषयांवरील उपयुक्त मराठी लेख."
+    var description = "ज्ञान, तंत्रज्ञान आणि जीवनशैली — मराठीतून, सोप्या भाषेत. AI, Technology, Health, Finance, Fitness, Education, Travel आणि Government Schemes विषयांवरील उपयुक्त मराठी लेख."
     var language: Language { .marathi }
     var imagePath: Path? { nil }
     var favicon: Favicon? { nil }

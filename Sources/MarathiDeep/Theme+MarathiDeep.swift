@@ -38,7 +38,7 @@ private struct MarathiDeepHTMLFactory: HTMLFactory {
 
                     Div {
                         H2("Explore topics")
-                        Paragraph("AI, Technology, Health, Finance, Fitness आणि Education — स्पष्ट मराठीत.")
+                        Paragraph("AI, Technology, Health, Finance, Fitness, Education, Travel आणि Schemes — स्पष्ट मराठीत.")
                         List(MarathiDeep.SectionID.allCases.filter { $0 != .about }) { sectionID in
                             let section = context.sections[sectionID]
                             let title = SiteHeader.sectionTitles[sectionID] ?? section.title
@@ -197,7 +197,7 @@ private struct MarathiDeepHTMLFactory: HTMLFactory {
 }
 
 private func needsDisclaimer(_ sectionID: MarathiDeep.SectionID) -> Bool {
-    sectionID == .health || sectionID == .finance || sectionID == .fitness
+    sectionID == .health || sectionID == .finance || sectionID == .fitness || sectionID == .schemes
 }
 
 private func siteHead<T: Location>(for location: T, on site: MarathiDeep) -> Node<HTML.DocumentContext> {
@@ -251,6 +251,8 @@ private struct SiteHeader: Component {
         .finance: "Finance",
         .fitness: "Fitness",
         .education: "Education",
+        .travel: "Travel",
+        .schemes: "Schemes",
         .about: "About"
     ]
 
@@ -344,6 +346,8 @@ private struct DisclaimerBanner: Component {
             text = "सूचना: हे सामान्य माहिती लेख आहेत, वैद्यकीय सल्ला नाही. वैयक्तिक आरोग्य निर्णयापूर्वी पात्र डॉक्टरांचा सल्ला घ्या."
         case .finance:
             text = "सूचना: हे शैक्षणिक लेख आहेत, वैयक्तिक आर्थिक/गुंतवणूक सल्ला नाही. निर्णय घेण्यापूर्वी पात्र सल्लागाराचा सल्ला घ्या."
+        case .schemes:
+            text = "सूचना: शासकीय योजनांची माहिती सामान्य मार्गदर्शनासाठी आहे. अटी, पात्रता आणि अर्ज प्रक्रिया बदलू शकते — अधिकृत सरकारी संकेतस्थळावर पडताळा."
         default:
             text = ""
         }

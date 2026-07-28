@@ -43,6 +43,14 @@ SECTIONS: dict[str, dict[str, str]] = {
         "title": "Education",
         "focus": "शिक्षण पद्धती, कौशल्य विकास, परीक्षा तयारी आणि शिकण्याच्या सवयी",
     },
+    "travel": {
+        "title": "Travel",
+        "focus": "महाराष्ट्रातील पर्यटन — किल्ले, समुद्रकिनारे, डोंगरस्थान, तीर्थक्षेत्रे, स्थानिक अन्न, प्रवास नियोजन आणि उपयुक्त टिप्स",
+    },
+    "schemes": {
+        "title": "Schemes",
+        "focus": "भारत व महाराष्ट्र शासकीय योजना — पात्रता, फायदे, अर्ज प्रक्रिया आणि अधिकृत स्रोत तपासणी; नेहमी अटी बदलू शकतात हे स्पष्ट करा",
+    },
 }
 
 USER_AGENT = "MarathiDeepBot/1.0 (https://github.com/bandalrahul/MarathiDeep; content-automation)"
