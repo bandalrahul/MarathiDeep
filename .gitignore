@@ -6,3 +6,6 @@
 .publish
 /Output
 /Publish
+.env
+.env.*
+!.env.example
