@@ -5,7 +5,7 @@ import Plot
 /// Fill these in before applying for / enabling Google AdSense.
 enum SiteConfig {
     /// Example: "ca-pub-1234567890123456" — leave empty until AdSense gives you an ID.
-    static let adsenseClientID = ""
+    static let adsenseClientID = "ca-pub-9268892677399703"
 
     /// Public contact used on Contact / Privacy pages and footer.
     static let contactEmail = "bandalrahul@yahoo.com"
