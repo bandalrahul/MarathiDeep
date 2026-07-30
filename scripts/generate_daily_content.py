@@ -22,34 +22,42 @@ SECTIONS: dict[str, dict[str, str]] = {
     "ai": {
         "title": "AI",
         "focus": "कृत्रिम बुद्धिमत्ता, मशीन लर्निंग, generative AI, आणि रोजच्या साधनांचा व्यावहारिक उपयोग",
+        "image_fallbacks": "artificial intelligence computer, robot technology, machine learning",
     },
     "technology": {
         "title": "Technology",
         "focus": "सॉफ्टवेअर, इंटरनेट, गॅझेट्स, सायबरसुरक्षा आणि डिजिटल उत्पादकता",
+        "image_fallbacks": "laptop computer desk, smartphone technology, internet network",
     },
     "health": {
         "title": "Health",
         "focus": "आरोग्य, पोषण, झोप, मानसिक स्वास्थ्य आणि प्रतिबंधात्मक काळजी",
+        "image_fallbacks": "healthy food vegetables, doctor hospital, yoga meditation",
     },
     "finance": {
         "title": "Finance",
         "focus": "बचत, बजेट, गुंतवणूक मूलतत्त्वे, विमा आणि आर्थिक नियोजन",
+        "image_fallbacks": "money coins savings, bank finance, calculator budget",
     },
     "fitness": {
         "title": "Fitness",
         "focus": "व्यायाम, स्ट्रेचिंग, घरगुती वर्कआउट आणि सक्रिय जीवनशैली",
+        "image_fallbacks": "person jogging outdoor, yoga stretch, gym workout",
     },
     "education": {
         "title": "Education",
         "focus": "शिक्षण पद्धती, कौशल्य विकास, परीक्षा तयारी आणि शिकण्याच्या सवयी",
+        "image_fallbacks": "students studying library, classroom school, books education",
     },
     "travel": {
         "title": "Travel",
         "focus": "महाराष्ट्रातील पर्यटन — किल्ले, समुद्रकिनारे, डोंगरस्थान, तीर्थक्षेत्रे, स्थानिक अन्न, प्रवास नियोजन आणि उपयुक्त टिप्स",
+        "image_fallbacks": "Maharashtra fort landscape, India hill station, beach Maharashtra",
     },
     "schemes": {
         "title": "Schemes",
         "focus": "भारत व महाराष्ट्र शासकीय योजना — पात्रता, फायदे, अर्ज प्रक्रिया आणि अधिकृत स्रोत तपासणी; नेहमी अटी बदलू शकतात हे स्पष्ट करा",
+        "image_fallbacks": "India agriculture farmer, government office India, rural India village",
     },
 }
 
@@ -175,7 +183,7 @@ def generate_article(section: str) -> dict[str, Any]:
   "slug": "english-kebab-case-slug",
   "description": "1-2 वाक्यांत मराठी सारांश (SEO-friendly)",
   "tags": ["3-to-5", "english-or-marathi", "tags"],
-  "image_query": "English Wikimedia Commons search for a relevant PHOTOGRAPH (not painting/map), 3-6 keywords, e.g. 'students studying library photograph'",
+  "image_query": "English Wikimedia Commons search: 3-5 short keywords for a PHOTOGRAPH (not painting/map/diagram). Prefer common nouns, e.g. 'India farmer field' or 'students library books'",
   "image_alt": "मराठी alt text for the image",
   "body_markdown": "पूर्ण लेख Markdown मध्ये. पहिली ओळ # शीर्षक असू नये (title स्वतंत्र आहे). किमान 700 मराठी शब्द. H2 उपशीर्षके, बुलेट्स, आणि शेवटी 'मुख्य मुद्दे' विभाग असावा. इंग्रजी पारिभाषिक शब्द आवश्यक असल्यास कंसात द्या."
 }}
@@ -202,7 +210,7 @@ def wikimedia_image(query: str) -> dict[str, str] | None:
             "generator": "search",
             "gsrsearch": query,
             "gsrnamespace": "6",
-            "gsrlimit": "8",
+            "gsrlimit": "12",
             "prop": "imageinfo",
             "iiprop": "url|extmetadata|mime|size",
             "iiurlwidth": "1600",
@@ -210,8 +218,12 @@ def wikimedia_image(query: str) -> dict[str, str] | None:
     )
     url = f"https://commons.wikimedia.org/w/api.php?{search_params}"
     req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-    with urllib.request.urlopen(req, timeout=60) as response:
-        data = json.loads(response.read().decode("utf-8"))
+    try:
+        with urllib.request.urlopen(req, timeout=60) as response:
+            data = json.loads(response.read().decode("utf-8"))
+    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
+        print(f"Wikimedia search failed for '{query}': {exc}")
+        return None
 
     pages = (data.get("query") or {}).get("pages") or {}
     candidates: list[dict[str, str]] = []
@@ -292,6 +304,74 @@ def unsplash_image(query: str) -> dict[str, str] | None:
     }
 
 
+def image_query_candidates(primary: str, section: str) -> list[str]:
+    """Build increasingly broad search queries for credited stock photos."""
+    stopwords = {
+        "a",
+        "an",
+        "the",
+        "of",
+        "in",
+        "on",
+        "for",
+        "with",
+        "and",
+        "to",
+        "photograph",
+        "photo",
+        "image",
+        "picture",
+        "showing",
+        "standing",
+        "sitting",
+    }
+    queries: list[str] = []
+    primary = (primary or "").strip()
+    if primary:
+        queries.append(primary)
+        words = [w for w in re.split(r"\s+", primary) if w.lower() not in stopwords]
+        if len(words) > 4:
+            queries.append(" ".join(words[:4]))
+        if len(words) > 2:
+            queries.append(" ".join(words[:2]))
+
+    fallbacks = SECTIONS[section].get("image_fallbacks", "")
+    for part in fallbacks.split(","):
+        part = part.strip()
+        if part:
+            queries.append(part)
+
+    queries.append(SECTIONS[section]["title"])
+
+    seen: set[str] = set()
+    unique: list[str] = []
+    for query in queries:
+        key = query.lower()
+        if key not in seen:
+            seen.add(key)
+            unique.append(query)
+    return unique
+
+
+def find_credited_image(primary_query: str, section: str) -> tuple[dict[str, str], str]:
+    """Try Unsplash then Wikimedia across primary + fallback queries."""
+    for query in image_query_candidates(primary_query, section):
+        try:
+            image = unsplash_image(query)
+            if image and image.get("url"):
+                print(f"Image via Unsplash for query: {query}")
+                return image, "Unsplash"
+        except Exception as exc:  # noqa: BLE001
+            print(f"Unsplash fallback ({query}): {exc}")
+
+        image = wikimedia_image(query)
+        if image and image.get("url"):
+            print(f"Image via Wikimedia for query: {query}")
+            return image, "Wikimedia Commons"
+
+    raise RuntimeError(f"No credited image found for query: {primary_query}")
+
+
 def download_image(image_url: str, dest: Path) -> None:
     dest.parent.mkdir(parents=True, exist_ok=True)
     req = urllib.request.Request(image_url, headers={"User-Agent": USER_AGENT})
@@ -357,30 +437,7 @@ tags: {tags}
 def generate_one(section: str) -> Path:
     print(f"Generating article for section: {section}")
     article = generate_article(section)
-    image = None
-    provider = "Wikimedia Commons"
-    try:
-        image = unsplash_image(article["image_query"])
-        if image and image.get("url"):
-            provider = "Unsplash"
-        else:
-            image = None
-    except Exception as exc:  # noqa: BLE001
-        print(f"Unsplash fallback ({exc})")
-        image = None
-
-    if image is None:
-        image = wikimedia_image(article["image_query"])
-        provider = "Wikimedia Commons"
-
-    if image is None:
-        # Broaden search once more
-        image = wikimedia_image(SECTIONS[section]["title"])
-        provider = "Wikimedia Commons"
-
-    if image is None or not image.get("url"):
-        raise RuntimeError(f"No credited image found for query: {article['image_query']}")
-
+    image, provider = find_credited_image(str(article["image_query"]), section)
     path = write_article(section, article, image, provider)
     print(f"Wrote {path.relative_to(ROOT)} with image credit via {provider}")
     return path
@@ -390,11 +447,26 @@ def main() -> int:
     count = int(os.environ.get("ARTICLE_COUNT", "2"))
     sections = pick_sections(count)
     written: list[Path] = []
+    errors: list[str] = []
     for section in sections:
-        written.append(generate_one(section))
-    print("Generated files:")
-    for path in written:
-        print(f" - {path.relative_to(ROOT)}")
+        try:
+            written.append(generate_one(section))
+        except Exception as exc:  # noqa: BLE001
+            message = f"{section}: {exc}"
+            errors.append(message)
+            print(f"ERROR generating {message}", file=sys.stderr)
+
+    if written:
+        print("Generated files:")
+        for path in written:
+            print(f" - {path.relative_to(ROOT)}")
+    if errors:
+        print(f"Failed sections ({len(errors)}):", file=sys.stderr)
+        for message in errors:
+            print(f" - {message}", file=sys.stderr)
+    if not written:
+        raise RuntimeError("No articles generated")
+    # Partial success still exits 0 so commit/push can save what we wrote.
     return 0
 
 
