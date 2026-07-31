@@ -34,8 +34,8 @@ struct MarathiDeep: Website {
     var name = "मराठीदीप"
     var description = "ज्ञान, तंत्रज्ञान आणि जीवनशैली — मराठीतून, सोप्या भाषेत. AI, Technology, Health, Finance, Fitness, Education, Travel आणि Government Schemes विषयांवरील उपयुक्त मराठी लेख."
     var language: Language { .marathi }
-    var imagePath: Path? { nil }
-    var favicon: Favicon? { nil }
+    var imagePath: Path? { "images/logo.png" }
+    var favicon: Favicon? { Favicon(path: "images/favicon.png", type: "image/png") }
 }
 
 try MarathiDeep().publish(

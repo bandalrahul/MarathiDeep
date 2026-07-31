@@ -76,18 +76,22 @@ header {
     padding-block: 1rem;
 }
 
-.site-name {
-    font-family: var(--font-display);
-    font-size: clamp(1.55rem, 2.4vw, 1.9rem);
-    font-weight: 700;
-    letter-spacing: 0.02em;
-    color: var(--ink);
+.site-logo {
+    display: inline-flex;
+    align-items: center;
     text-decoration: none;
-    line-height: 1.1;
+    line-height: 0;
 }
 
-.site-name:hover {
-    color: var(--accent-strong);
+.site-logo img {
+    display: block;
+    height: clamp(3.25rem, 7vw, 4.25rem);
+    width: auto;
+    border-radius: 10px;
+}
+
+.site-logo:hover img {
+    opacity: 0.92;
 }
 
 .site-nav ul {

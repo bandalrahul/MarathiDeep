@@ -214,6 +214,7 @@ private func siteHead<T: Location>(for location: T, on site: MarathiDeep) -> Nod
         .stylesheet("/styles.css"),
         .viewport(.accordingToDevice),
         .unwrap(site.favicon) { .favicon($0) },
+        .link(.rel(.appleTouchIcon), .href("/images/apple-touch-icon.png")),
         .rssFeedLink("/feed.rss", title: "Subscribe to \(site.name)"),
         .unwrap(location.imagePath ?? site.imagePath) { path in
             .socialImageLink(site.url(for: path))
@@ -259,8 +260,13 @@ private struct SiteHeader: Component {
     var body: Component {
         Header {
             Div {
-                Link(context.site.name, url: "/")
-                    .class("site-name")
+                Link(url: "/") {
+                    Image(
+                        url: "/images/logo-header.png",
+                        description: context.site.name
+                    )
+                }
+                .class("site-logo")
                 navigation
             }
             .class("wrapper header-inner")
